@@ -1,10 +1,101 @@
 import re
-from django.shortcuts import render, redirect
+from django.shortcuts import get_object_or_404, render, redirect
 from .models import *
+from django.core.mail import send_mail
+from django.contrib.sites.shortcuts import get_current_site
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth.tokens import default_token_generator
+from django.urls import reverse
+from django.conf import settings
+from django.http import HttpResponse
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.contrib import messages
+from django.contrib.auth.hashers import make_password
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
+from .forms import *
+
+@csrf_exempt
+@login_required
+def delete_account(request):
+    if request.method == 'POST':
+        user = request.user
+        user.delete()
+        return JsonResponse({'message': 'Account deleted successfully'}, status=200)
+    return JsonResponse({'error': 'Invalid request'}, status=400)
 
 # Create your views here.
 def index(request):
-    return render(request, 'funding/index.html')
+    projects = Project.objects.all()
+    images = CampaignImage.objects.all()
+    return render(request, 'funding/index.html', {'projects': projects, 'images': images})
+
+def project_detail(request, project_id):
+    project = Project.objects.get(id=project_id)
+    images = CampaignImage.objects.filter(campaign=project)
+    comments = project.comments.all().order_by('-created_at')
+    if request.method == "POST":
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.project = project
+            comment.user = request.user
+            comment.save()
+            return redirect('project_detail', project_id=project_id)
+    else:
+        form = CommentForm()
+        
+    return render(request, 'funding/project_detail.html', {
+        'project': project,
+        'images': images,
+        'comments': comments,
+        'form': form,
+        })
+
+def project(request):
+    if request.method == "POST":
+        form = ProjectForm(request.POST)
+        images = request.FILES.getlist('images')
+        if form.is_valid():
+            print(images)
+            project = form.save(commit=False)
+            project.user = request.user
+            project.save() 
+            for img in images:
+                CampaignImage.objects.create(campaign=project, image=img)
+
+            return redirect('home')
+        else:
+            print(form.errors)
+    else:
+        form = ProjectForm()
+    return render(request, 'funding/project.html', {'form': form})
+
+
+def donate(request, project_id):
+    project = get_object_or_404(Project, id=project_id)
+
+    if request.method == "POST":
+        form = DonationForm(request.POST)
+        if form.is_valid():
+            donation = form.save(commit=False)
+            donation.project = project
+            donation.user = request.user
+            donation.save()
+
+            # Update project's current amount
+            project.current_amount += donation.amount
+            project.save()
+            return redirect('home')  # Or redirect to a "Thank You" page
+    else:
+        form = DonationForm()
+
+    return render(request, 'funding/donate.html', {
+        'form': form,
+        'project': project
+    })
 
 def register(request):
     errors = {}
@@ -68,16 +159,104 @@ def register(request):
             first_name=first_name,
             last_name=last_name,
             email=email,
-            password=password, 
+            password=make_password(password), 
             phone=phone,
             picture=picture
         )
             
+            # Generate token for email verification
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+
+            # Build activation URL
+            domain = get_current_site(request).domain
+            activation_link = f"http://{domain}{reverse('activate', kwargs={'uidb64': uid, 'token': token})}"
+
+            # Send activation email
+            send_mail(
+                "Activate Your Account",
+                f"Click the link to activate your account: {activation_link}",
+                settings.EMAIL_HOST_USER,
+                [email],
+                fail_silently=False,
+            )
             return redirect('login')
     return render(request, 'funding/register.html')
 
+
+def activate(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = UserProfile.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, UserProfile.DoesNotExist):
+        user = None
+
+    if user and default_token_generator.check_token(user, token):
+        user.is_active = True  # Activate user
+        user.save()
+        return HttpResponse("Your account has been activated! You can now log in.")
+    else:
+        return HttpResponse("Activation link is invalid or expired.")
+    
 def login(request):
+    if request.method == 'POST':
+        email = request.POST['email']
+        password = request.POST['password']
+
+        # Authenticate user (use `email` if AUTH_USER_MODEL is set)
+        user = authenticate(request, username=email, password=password)
+        print(user)
+        if user is not None:
+            if user.is_active:  # Ensure the user is activated
+                auth_login(request, user)
+                return redirect('home')  # Redirect to home/dashboard after login
+            else:
+                return render(request, "funding/login.html", 
+                {
+                    "message": "Your account is not activated. Please check your email."
+                })
+        else:
+            return render(request, "funding/login.html", 
+            {
+                "message": "Invalid email or password."
+            })
+
     return render(request, 'funding/login.html')
 
 def logout(request):
-    return render(request, 'funding/logout.html')
+    auth_logout(request)
+    return redirect('login')
+
+def profile(request):
+    return render(request, 'funding/profile.html')
+
+def update_profile(request):
+    if request.method == 'POST':
+        first_name = request.POST['first_name']
+        last_name = request.POST['last_name']
+        email = request.POST['email']
+        phone = request.POST['phone']
+        picture = request.FILES.get('picture')
+        user = UserProfile.objects.get(email=email)
+        
+        if first_name:
+            user.first_name = first_name
+        if last_name:
+            user.last_name = last_name
+        if phone:
+            user.phone = phone
+        if picture:
+            user.picture = picture
+        user.save()
+        messages.success(request, "Profile updated successfully.")
+        return redirect('profile')
+
+    return render(request, 'funding/update_profile.html')
+
+def delete_profile(request):
+    if request.method == 'POST':
+        user = UserProfile.objects.get(email=request.user.email)
+        user.delete()
+        messages.success(request, "Profile deleted successfully.")
+        return redirect('register')
+    return render(request, 'funding/login.html')

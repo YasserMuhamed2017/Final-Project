@@ -1,0 +1,11 @@
+{% extends 'funding/index.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h2><strong>Donate to</strong> {{ project.title }}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-success">Donate</button>
+    </form>
+</div>
+{% endblock %}

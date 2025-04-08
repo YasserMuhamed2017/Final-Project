@@ -1,0 +1,32 @@
+{% extends 'funding/profile.html' %}
+{% block title %} Update Profile {% endblock %}
+{% block content %}
+    <div class="container mt-5 mb-5">
+        <h1 class="text-center">Edit Profile</h1>
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="email" value="{{ user.email }}">
+            <div class="mb-3">
+                <label for="first_name" class="form-label">First Name</label>
+                <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}">
+            </div>
+            <div class="mb-3">
+                <label for="last_name" class="form-label">Last Name</label>
+                <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}">
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" value="{{ user.email }}" disabled>
+            </div>
+            <div class="mb-3">
+                <label for="phone" class="form-label">Phone Number</label>
+                <input type="text" class="form-control" id="phone" name="phone" value="{{ user.phone }}">
+            </div>
+            <div class="mb-3">
+                <label for="picture" class="form-label">Profile Picture</label>
+                <input type="file" class="form-control" id="picture" name="picture">
+            </div>
+            <button type="submit" class="btn btn-primary">Update Profile</button>
+        </form>
+    </div>
+{% endblock %}

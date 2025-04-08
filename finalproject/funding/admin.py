@@ -6,10 +6,10 @@ admin.site.register(UserProfile)
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'total_target', 'current_amount', 'start_time', 'end_time')
+    list_display = ('title', 'category', 'total_target', 'current_amount', 'start_time', 'end_time', 'reported')
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ('project', 'user', 'content', 'created_at')
+    list_display = ('project', 'user', 'content', 'created_at', 'reported')
     list_filter = ('created_at',)
     search_fields = ('content', 'user__username', 'project__title')

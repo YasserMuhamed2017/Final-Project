@@ -1,4 +1,5 @@
 {% load static %}
+{% load custom_filters %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,7 +13,7 @@
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light" style="background-color: #e3f2fd;">
-        <a class="navbar-brand ms-5" href="{% url 'home' %}">Crowd-Funding</a>
+        <a class="navbar-brand ms-5" href="{% url 'homepage' %}">Crowd-Funding</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
@@ -20,7 +21,7 @@
           <ul class="navbar-nav mr-auto">
             {% if user.is_authenticated %}
             <li class="nav-item active">
-              <a class="nav-link" href="{% url 'project' %}">Projects</a>
+              <a class="nav-link" href="{% url 'home' %}">Projects</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" href="{% url 'profile' %}">Profile</a>
@@ -36,8 +37,8 @@
               <a class="nav-link" href="{% url 'login' %}">Login</a>
             {% endif %}
           </ul>
-          <form class="form-inline my-2 my-lg-0 d-flex ms-auto me-5">
-            <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+          <form method="GET" action="{% url 'search_projects' %}" class="form-inline my-2 my-lg-0 d-flex ms-auto me-5">
+            <input class="form-control mr-sm-2" type="text" name="q" placeholder="Search projects by title or tag..." aria-label="Search" value="{{ request.GET.q }}">
             <button class="btn btn-outline-success my-2 my-sm-0 ms-3" type="submit">Search</button>
           </form>
         </div>
@@ -46,6 +47,9 @@
       <div class="container mt-5">
           <h1 class="text-center mb-4">Welcome to Crowd-Funding</h1>
           <h2 class="text-center mb-4">Featured Projects</h2>
+          <div class="d-flex justify-content-end mb-4">
+            <a class="btn btn-primary" href="{% url 'project' %}">Create a new project</a>
+          </div>     
           <div class="row">
               <!-- Loop through projects -->
               {% for project in projects %}
@@ -54,26 +58,24 @@
                      <!-- Project Image Slider -->
                      <div id="carousel-{{ project.id }}">
                       <div class="carousel-inner">
-                          {% for image in images %}
-                              {% if image.campaign.id == project.id %}
-                              <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                                  <img src="{{ image.image.url }}" class="d-block w-100 img-fluid rounded-top" alt="Project Image">
-                              </div>
-                              {% endif %}
-                          {% endfor %}
+                        {% for image in images|get_item:project.id %}
+                            <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                                <img src="{{ image.image.url }}" class="d-block w-100 img-fluid rounded-top" alt="Project Image">
+                            </div>
+                        {% endfor %}
                       </div>
                     </div>
                       <!-- Project Details -->
                       <div class="card-body">
                           <h5 class="card-title">{{ project.title }}</h5>
-                          <p class="card-text">{{ project.description }}</p>
+                          <p class="card-text">{{ project.details }}</p>
                       </div>
                       <div class="card-footer text-center">
                           <a href="{% url 'project_detail' project.id %}" class="btn btn-primary">View Details</a>
                       </div>
                   </div>
               </div>
-              {% endfor %}
+            {% endfor %}
           </div>
       </div>
       {% endblock %}

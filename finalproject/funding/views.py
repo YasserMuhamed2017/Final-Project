@@ -1,4 +1,6 @@
+from decimal import Decimal
 import re
+from django.utils import timezone
 from django.shortcuts import get_object_or_404, render, redirect
 from .models import *
 from django.core.mail import send_mail
@@ -16,6 +18,8 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from .forms import *
+from django.db.models import Q
+from django.db.models import Avg
 
 @csrf_exempt
 @login_required
@@ -29,13 +33,52 @@ def delete_account(request):
 # Create your views here.
 def index(request):
     projects = Project.objects.all()
-    images = CampaignImage.objects.all()
+    images = {project.id: CampaignImage.objects.filter(campaign=project) for project in projects}
     return render(request, 'funding/index.html', {'projects': projects, 'images': images})
+
+def homepage(request):
+    top_projects = (
+        Project.objects.filter(end_time__gt=timezone.now())  
+        .annotate(avg_rating=Avg('ratings__value')) 
+        .order_by('-avg_rating')[:5]
+    )
+    latest_projects = Project.objects.order_by('-start_time')[:5]
+    categories = Category.objects.all()
+    return render(request, 'funding/homepage.html', {'top_projects': top_projects, 'latest_projects': latest_projects, 'categories': categories})
+
+def category_detail(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    projects = category.projects.all()
+    return render(request, 'funding/detail.html', {
+        'category': category,
+        'projects': projects
+    })
+
+def search_projects(request):
+    query = request.GET.get('q', '')
+    projects = Project.objects.filter(
+        Q(title__icontains=query)
+    ).distinct() if query else []
+
+    print("Search Query:", query)
+    return render(request, 'funding/search_results.html', {
+        'projects': projects,
+        'query': query
+    })
 
 def project_detail(request, project_id):
     project = Project.objects.get(id=project_id)
     images = CampaignImage.objects.filter(campaign=project)
     comments = project.comments.all().order_by('-created_at')
+    can_cancel = project.current_amount < (Decimal('0.25') * project.total_target)
+    average_rating = project.average_rating()
+    # Fetch similar projects based on tags
+    project_tags = project.tags.split(',')  # Split tags into a list
+    similar_projects = Project.objects.filter(
+        Q(tags__icontains=project_tags[0]),
+        ~Q(id=project.id)  # Exclude the current project
+    ).distinct()[:4]  # Limit to 4 projects
+
     if request.method == "POST":
         form = CommentForm(request.POST)
         if form.is_valid():
@@ -52,6 +95,9 @@ def project_detail(request, project_id):
         'images': images,
         'comments': comments,
         'form': form,
+        'can_cancel': can_cancel,
+        'average_rating': average_rating,
+        'similar_projects': similar_projects, 
         })
 
 def project(request):
@@ -96,6 +142,69 @@ def donate(request, project_id):
         'form': form,
         'project': project
     })
+
+
+@login_required
+def report_comment(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id)
+    if comment.reported:
+        messages.info(request, 'This comment has already been reported.')
+    else:
+        comment.reported = True
+        comment.save()
+        messages.success(request, 'Comment reported successfully.')
+    
+    return redirect('project_detail', project_id=comment.project.id)
+
+@login_required
+def report_project(request, project_id):
+    project = get_object_or_404(Project, id=project_id)
+    if project.reported:
+        messages.info(request, 'This project has already been reported.')
+    else:
+        project.reported = True
+        project.save()
+        messages.success(request, 'Project reported successfully.')
+
+    return redirect('project_detail', project_id=project.id)
+
+@login_required
+def rate_project(request, project_id):
+    project = get_object_or_404(Project, id=project_id)
+    if request.method == 'POST':
+        value = int(request.POST.get('rating', None))
+        print(f"Rating value received: {value}")
+        if value < 1 or value > 5:
+            messages.error(request, 'Invalid rating value. Please select a value between 1 and 5.')
+        else:
+            # Check if the user has already rated the project
+            rating, created = Rating.objects.get_or_create(project=project, user=request.user, defaults={'value': value})
+            rating.value = value
+            rating.save()
+            if created:
+                messages.success(request, 'Thank you for rating this project!')
+            else:
+                messages.success(request, 'Your rating has been updated.')
+    return redirect('project_detail', project_id=project.id)
+
+@login_required
+def cancel_project(request, project_id):
+    project = get_object_or_404(Project, id=project_id)
+
+    # Ensure the logged-in user is the project creator
+    if request.user != project.user:
+        messages.error(request, "You are not authorized to cancel this project.")
+        return redirect('project_detail', project_id=project.id)
+
+    # Check if the project can be canceled
+    if project.can_be_cancelled():
+        project.cancelled = True
+        project.save()
+        messages.success(request, "The project has been canceled successfully.")
+    else:
+        messages.error(request, "The project cannot be canceled as donations exceed 25% of the target.")
+
+    return redirect('project_detail', project_id=project.id)
 
 def register(request):
     errors = {}
@@ -228,7 +337,9 @@ def logout(request):
     return redirect('login')
 
 def profile(request):
-    return render(request, 'funding/profile.html')
+    projects = Project.objects.filter(user=request.user)
+    donations = Donation.objects.filter(user=request.user)
+    return render(request, 'funding/profile.html', {'projects': projects, 'donations': donations})
 
 def update_profile(request):
     if request.method == 'POST':

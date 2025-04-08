@@ -24,3 +24,8 @@
 #confirmationModal button {
     margin: 5px;
 }
+
+.project-image {
+    max-width: 100%;
+    height: 200px;
+}

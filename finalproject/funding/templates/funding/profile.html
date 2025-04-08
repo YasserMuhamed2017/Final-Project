@@ -36,11 +36,18 @@
                     <tbody>
                         {% for project in projects %}
                         <tr>
-                            <td>{{ project.name }}</td>
-                            <td>{{ project.description }}</td>
-                            <td>${{ project.goal_amount }}</td>
-                            <td>${{ project.current_amount }}</td>
-                            <td>{{ project.status }}</td>
+                            <td>{{ project.title }}</td>
+                            <td>{{ project.details }}</td>
+                            <td>{{ project.total_target }} EGP</td>
+                            <td>{{ project.current_amount }} EGP</td>
+                            <td>
+                                {% if project.cancelled %}
+                                    Inactive
+                                {% else %}
+                                    Active
+                                {% endif %}
+                            </td>
+
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -61,9 +68,9 @@
                     <tbody>
                         {% for donation in donations %}
                         <tr>
-                            <td>{{ donation.project.name }}</td>
-                            <td>${{ donation.amount }}</td>
-                            <td>{{ donation.date }}</td>
+                            <td>{{ donation.project.title }}</td>
+                            <td>{{ donation.amount }} EGP</td>
+                            <td>{{ donation.created_at }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

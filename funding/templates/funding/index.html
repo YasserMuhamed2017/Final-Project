@@ -12,8 +12,8 @@
     <title>{% block title %} {% endblock %}</title>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light" style="background-color: #e3f2fd;">
-        <a class="navbar-brand ms-5" href="{% url 'homepage' %}">Crowd-Funding</a>
+    <nav class="navbar navbar-expand-lg navbar-light bg-dark">
+        <a class="navbar-brand ms-5 text-white" href="{% url 'homepage' %}">Crowd-Funding</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
@@ -21,25 +21,25 @@
           <ul class="navbar-nav mr-auto">
             {% if user.is_authenticated %}
             <li class="nav-item active">
-              <a class="nav-link" href="{% url 'home' %}">Projects</a>
+              <a class="nav-link text-white" href="{% url 'home' %}">Projects</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'profile' %}">Profile</a>
+              <a class="nav-link text-white" href="{% url 'profile' %}">Profile</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+              <a class="nav-link text-white" href="{% url 'logout' %}">Logout</a>
             </li>
             {% else %}
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'register' %}">Register</a>
+              <a class="nav-link text-white" href="{% url 'register' %}">Register</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'login' %}">Login</a>
+              <a class="nav-link text-white" href="{% url 'login' %}">Login</a>
             {% endif %}
           </ul>
           <form method="GET" action="{% url 'search_projects' %}" class="form-inline my-2 my-lg-0 d-flex ms-auto me-5">
             <input class="form-control mr-sm-2" type="text" name="q" placeholder="Search projects by title or tag..." aria-label="Search" value="{{ request.GET.q }}">
-            <button class="btn btn-outline-success my-2 my-sm-0 ms-3" type="submit">Search</button>
+            <button class="btn btn-outline-light ms-3" type="submit">Search</button>
           </form>
         </div>
       </nav>
@@ -48,7 +48,7 @@
           <h1 class="text-center mb-4">Welcome to Crowd-Funding</h1>
           <h2 class="text-center mb-4">Featured Projects</h2>
           <div class="d-flex justify-content-end mb-4">
-            <a class="btn btn-primary" href="{% url 'project' %}">Create a new project</a>
+            <a class="btn btn-dark" href="{% url 'project' %}">Create a new project</a>
           </div>     
           <div class="row">
               <!-- Loop through projects -->
@@ -71,7 +71,7 @@
                           <p class="card-text">{{ project.details }}</p>
                       </div>
                       <div class="card-footer text-center">
-                          <a href="{% url 'project_detail' project.id %}" class="btn btn-primary">View Details</a>
+                          <a href="{% url 'project_detail' project.id %}" class="btn btn-dark">View Details</a>
                       </div>
                   </div>
               </div>
@@ -79,5 +79,12 @@
           </div>
       </div>
       {% endblock %}
+      <footer class="bg-black text-white text-center py-3 mt-5">
+        <p class="mb-0">Crowd-Funding &copy; ITI BENHA Djano Team . All rights reserved.</p>
+        <small>Follow us on 
+          <a href="#" class="text-white">Facebook</a>, 
+          <a href="#" class="text-white">Twitter</a>
+        </small>
+      </footer>
 </body>
 </html>

@@ -1,6 +1,7 @@
 from decimal import Decimal
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
+from django.contrib.auth.models import User
 
 class UserProfileManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -17,9 +18,12 @@ class UserProfile(AbstractBaseUser):
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     phone = models.CharField(max_length=15, unique=True)
-    picture = models.ImageField(upload_to='profile_pics/', default='profile_pics/default.jpg')
+    picture = models.ImageField(upload_to='profile_pics/')
     is_active = models.BooleanField(default=False)
-
+    facebook_profile = models.URLField(max_length=200, blank=True , null=True)
+    birth_date = models.DateField(blank=True, null=True)
+    country = models.CharField(max_length=50, blank=True, null=True)
+    
     USERNAME_FIELD = 'email'  # Ensure this is set correctly
     REQUIRED_FIELDS = ['first_name', 'last_name', 'phone']
 

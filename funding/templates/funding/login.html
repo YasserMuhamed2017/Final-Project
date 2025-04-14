@@ -6,9 +6,9 @@
 {% if message %}
         <p class="alert alert-danger m-5">{{ message }}</p>
 {% endif %}
-<div class="container mt-5">
+<div class="container mt-5" style="height: 70vh;">
     <div class="row">
-        <div class="col-md-6 offset-md-3 border p-4 rounded">
+        <div class="col-md-6 offset-md-3 border p-4 rounded shadow-lg">
             <h2 class="text-center">Login</h2>
             <form method="POST">
                 {% csrf_token %}
@@ -25,4 +25,5 @@
         </div>
     </div>
 </div>
+
 {% endblock %}

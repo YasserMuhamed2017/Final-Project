@@ -10,7 +10,7 @@
             <div class="card mb-4">
                 <div id="carousel-{{ project.id }}" class="carousel slide" data-ride="carousel">
                     <div id="carousel-{{ project.id }}" class="carousel slide" data-bs-ride="carousel" data-bs-interval="2000">
-                        <div class="carousel-inner">
+                        <div class="carousel-inner specific">
                             {% for image in images %}
                                 {% if image.campaign.id == project.id %}
                                     <div class="carousel-item {% if forloop.first %}active{% endif %}">
@@ -45,7 +45,7 @@
                     <a href="{% url 'cancel_project' project.id %}" class="btn btn-danger">Cancel Project</a>
                 {% endif %}
             {% endif %} <br><br>
-            {% if user.is_authenticated and user == project.user %}
+            {% if user.is_authenticated and user != project.user and not project.cancelled %}
                 <a href="{% url 'donate' project.id %}" class="btn btn-primary">Donate</a>
                 <a href="{% url 'report_project' project.id %}" class="btn btn-danger">Report</a>
             {% endif %}
@@ -57,8 +57,8 @@
 <div class="container mt-5">
     <div class="row">
         <div class="col-md-8 offset-md-2">
+            {% if user.is_authenticated and user != project.user and not project.cancelled %}
             <h3>Rate this Project</h3>
-            {% if user.is_authenticated %}
             <form method="POST" action="{% url 'rate_project' project.id %}">
                 {% csrf_token %}
                 <div class="mb-3">

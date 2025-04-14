@@ -102,10 +102,10 @@ def project_detail(request, project_id):
 
 def project(request):
     if request.method == "POST":
+        print(request)
         form = ProjectForm(request.POST)
         images = request.FILES.getlist('images')
         if form.is_valid():
-            print(images)
             project = form.save(commit=False)
             project.user = request.user
             project.save() 
@@ -117,6 +117,7 @@ def project(request):
             print(form.errors)
     else:
         form = ProjectForm()
+    
     return render(request, 'funding/project.html', {'form': form})
 
 
@@ -134,10 +135,10 @@ def donate(request, project_id):
             # Update project's current amount
             project.current_amount += donation.amount
             project.save()
-            return redirect('home')  # Or redirect to a "Thank You" page
+            return redirect('project_detail', project_id=project.id) 
     else:
         form = DonationForm()
-
+    
     return render(request, 'funding/donate.html', {
         'form': form,
         'project': project
@@ -232,6 +233,8 @@ def register(request):
             errors['email'] = "Email is required."
         elif "@" not in email or "." not in email:
             errors['email'] = "Enter a valid email address."
+        elif UserProfile.objects.filter(email=email).exists():
+            errors['email'] = "Email already exists."
         else:
             data['email'] = email
 
@@ -248,19 +251,24 @@ def register(request):
             data['confirm_password'] = confirm_password
 
         egyptian_phone_pattern = r"^01[0125]\d{8}$"
+        
+        check_phone_number = UserProfile.objects.filter(phone=phone).exists()
 
         if not phone:
             errors['phone'] = "Phone is required."
         elif not re.match(egyptian_phone_pattern, phone):
-            errors['phone'] = "Enter a valid phone number."
+            errors['phone'] = "Enter a valid phone number. Must be Egyptian phone number"
+        elif check_phone_number:
+            errors['phone'] = "Phone number already exists."
         else:
             data['phone'] = phone
-        
+
         if not picture:
             errors['picture'] = "Profile picture is required."
         else:
             data['picture'] = picture
 
+        print(picture)
         if errors:
             return render(request, 'funding/register.html', {'errors': errors, 'data': data})
         else:
@@ -315,15 +323,17 @@ def login(request):
         # Authenticate user (use `email` if AUTH_USER_MODEL is set)
         user = authenticate(request, username=email, password=password)
         print(user)
-        if user is not None:
-            if user.is_active:  # Ensure the user is activated
+
+        email_exist = UserProfile.objects.filter(email=email, is_active=False).exists()
+
+        if user is not None and user.is_active:
                 auth_login(request, user)
-                return redirect('home')  # Redirect to home/dashboard after login
-            else:
-                return render(request, "funding/login.html", 
-                {
-                    "message": "Your account is not activated. Please check your email."
-                })
+                return redirect('home')  # Redirect to home page after login
+        elif email_exist:
+            return render(request, "funding/login.html", 
+            {
+                "message": "Your account is not activated. Please check your email."
+            })
         else:
             return render(request, "funding/login.html", 
             {
@@ -349,7 +359,16 @@ def update_profile(request):
         phone = request.POST['phone']
         picture = request.FILES.get('picture')
         user = UserProfile.objects.get(email=email)
-        
+        facebook_profile = request.POST.get('facebook_profile')
+        birth_date = request.POST.get('birth_date')
+        country = request.POST.get('country')
+
+        if facebook_profile:
+            user.facebook_profile = facebook_profile
+        if birth_date:
+            user.birth_date = birth_date
+        if country:
+            user.country = country
         if first_name:
             user.first_name = first_name
         if last_name:

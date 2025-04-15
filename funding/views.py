@@ -59,8 +59,7 @@ def search_projects(request):
     projects = Project.objects.filter(
         Q(title__icontains=query)
     ).distinct() if query else []
-
-    print("Search Query:", query)
+    
     return render(request, 'funding/search_results.html', {
         'projects': projects,
         'query': query
@@ -102,7 +101,6 @@ def project_detail(request, project_id):
 
 def project(request):
     if request.method == "POST":
-        print(request)
         form = ProjectForm(request.POST)
         images = request.FILES.getlist('images')
         if form.is_valid():
@@ -175,17 +173,15 @@ def rate_project(request, project_id):
     if request.method == 'POST':
         value = int(request.POST.get('rating', None))
         print(f"Rating value received: {value}")
-        if value < 1 or value > 5:
-            messages.error(request, 'Invalid rating value. Please select a value between 1 and 5.')
+    
+        # Check if the user has already rated the project
+        rating, created = Rating.objects.get_or_create(project=project, user=request.user)
+        rating.value = value
+        rating.save()
+        if created:
+            messages.success(request, 'Thank you for rating this project!')
         else:
-            # Check if the user has already rated the project
-            rating, created = Rating.objects.get_or_create(project=project, user=request.user, defaults={'value': value})
-            rating.value = value
-            rating.save()
-            if created:
-                messages.success(request, 'Thank you for rating this project!')
-            else:
-                messages.success(request, 'Your rating has been updated.')
+            messages.success(request, 'Your rating has been updated.')
     return redirect('project_detail', project_id=project.id)
 
 @login_required
@@ -328,7 +324,7 @@ def login(request):
 
         if user is not None and user.is_active:
                 auth_login(request, user)
-                return redirect('home')  # Redirect to home page after login
+                return redirect('/')  # Redirect to home page after login
         elif email_exist:
             return render(request, "funding/login.html", 
             {

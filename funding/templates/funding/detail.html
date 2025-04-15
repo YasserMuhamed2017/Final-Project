@@ -12,8 +12,6 @@
             <div class="card h-100 shadow-lg border-0">
                 {% if project.campaignimage_set.first %}
                     <img src="{{ project.campaignimage_set.first.image.url }}" class="card-img-top rounded-top" alt="Project Image">
-                {% else %}
-                    <img src="{% static 'images/placeholder.png' %}" class="card-img-top rounded-top" alt="No Image Available">
                 {% endif %}
                 <div class="card-body">
                     <h5 class="card-title">{{ project.title }}</h5>
@@ -25,7 +23,7 @@
             </div>
         </div>
     {% empty %}
-        <div class="col mx-auto">
+        <div class="col mx-auto" style="height: 60vh;">
             <div class="alert alert-info w-100 text-center" role="alert">
                 No projects in this category yet.
             </div>
@@ -33,7 +31,7 @@
     {% endfor %}
 </div>
 
-<div class="mt-5 text-center">
+<div class="mt-5 text-center" >
     <a href="{% url 'homepage' %}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left-circle me-1"></i> Back to Homepage
     </a>

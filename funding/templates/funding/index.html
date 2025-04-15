@@ -56,15 +56,9 @@
               <div class="col-md-4 mb-4">
                   <div class="card h-100">
                      <!-- Project Image Slider -->
-                     <div id="carousel-{{ project.id }}">
-                      <div class="carousel-inner">
-                        {% for image in images|get_item:project.id %}
-                            <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                                <img src="{{ image.image.url }}" class="d-block w-100 img-fluid rounded-top" alt="Project Image">
-                            </div>
-                        {% endfor %}
-                      </div>
-                    </div>
+                     {% if project.campaignimage_set.first %}
+                        <img src="{{ project.campaignimage_set.first.image.url }}" class="card-img-top" alt="Project Image">
+                    {% endif %}
                       <!-- Project Details -->
                       <div class="card-body">
                           <h5 class="card-title">{{ project.title }}</h5>

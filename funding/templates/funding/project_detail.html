@@ -46,7 +46,7 @@
                 {% endif %}
             {% endif %} <br><br>
             {% if user.is_authenticated and user != project.user and not project.cancelled %}
-                <a href="{% url 'donate' project.id %}" class="btn btn-primary">Donate</a>
+                <a href="{% url 'donate' project.id %}" class="btn btn-dark">Donate</a>
                 <a href="{% url 'report_project' project.id %}" class="btn btn-danger">Report</a>
             {% endif %}
         </div>
@@ -72,7 +72,7 @@
                         <option value="5">5 - Excellent</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary">Submit Rating</button>
+                <button type="submit" class="btn btn-dark">Submit Rating</button>
             </form>
             {% endif %}
         </div>
@@ -116,7 +116,7 @@
             <form method="POST">
                 {% csrf_token %}
                 {{ form.as_p }}
-                <button type="submit" class="btn btn-primary">Add Comment</button>
+                <button type="submit" class="btn btn-dark">Add Comment</button>
             </form>
             {% endif %}
         </div>
@@ -141,7 +141,7 @@
                                 <h6 class="card-title text-primary">{{ similar_project.title }}</h6>
                                 <p class="card-text text-muted">{{ similar_project.details|truncatewords:10 }}</p>
                                 <div class="mt-auto text-end">
-                                    <a href="{% url 'project_detail' similar_project.id %}" class="btn btn-outline-success btn-sm">View Project</a>
+                                    <a href="{% url 'project_detail' similar_project.id %}" class="btn btn-outline-dark btn-sm">View Project</a>
                                 </div>
                             </div>
                         </div>
